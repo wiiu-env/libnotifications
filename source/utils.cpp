@@ -83,7 +83,7 @@ NotificationModuleStatus NotificationModule_InitLibrary() {
         return NOTIFICATION_MODULE_RESULT_MODULE_NOT_FOUND;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMGetVersion", (void **) &sNMGetVersion) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMGetVersion", (void **) &sNMGetVersion) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMGetVersion failed.");
         return NOTIFICATION_MODULE_RESULT_MODULE_MISSING_EXPORT;
     }
@@ -94,35 +94,35 @@ NotificationModuleStatus NotificationModule_InitLibrary() {
         return NOTIFICATION_MODULE_RESULT_UNSUPPORTED_VERSION;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMIsOverlayReady", (void **) &sNMIsOverlayReady) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMIsOverlayReady", (void **) &sNMIsOverlayReady) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMIsOverlayReady failed.");
         sNMIsOverlayReady = nullptr;
     }
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMAddStaticNotification", (void **) &sNMAddStaticNotification) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMAddStaticNotification", (void **) &sNMAddStaticNotification) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMAddStaticNotification failed.");
         sNMAddStaticNotification = nullptr;
     }
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMAddDynamicNotification", (void **) &sNMAddDynamicNotification) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMAddDynamicNotification", (void **) &sNMAddDynamicNotification) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMAddDynamicNotification failed.");
         sNMAddStaticNotification = nullptr;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMUpdateDynamicNotificationText", (void **) &sNMUpdateDynamicNotificationText) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationText", (void **) &sNMUpdateDynamicNotificationText) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationText failed.");
         sNMAddStaticNotification = nullptr;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMUpdateDynamicNotificationBackgroundColor", (void **) &sNMUpdateDynamicNotificationBackgroundColor) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationBackgroundColor", (void **) &sNMUpdateDynamicNotificationBackgroundColor) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationBackgroundColor failed.");
         sNMAddStaticNotification = nullptr;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMUpdateDynamicNotificationTextColor", (void **) &sNMUpdateDynamicNotificationTextColor) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationTextColor", (void **) &sNMUpdateDynamicNotificationTextColor) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationTextColor failed.");
         sNMAddStaticNotification = nullptr;
     }
 
-    if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMFinishDynamicNotification", (void **) &sNMFinishDynamicNotification) != OS_DYNLOAD_OK) {
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMFinishDynamicNotification", (void **) &sNMFinishDynamicNotification) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMFinishDynamicNotification failed.");
         sNMAddStaticNotification = nullptr;
     }
@@ -156,7 +156,7 @@ NotificationModuleStatus NotificationModule_GetVersion(NotificationModuleAPIVers
             return NOTIFICATION_MODULE_RESULT_MODULE_NOT_FOUND;
         }
 
-        if (OSDynLoad_FindExport(sModuleHandle, FALSE, "NMGetVersion", (void **) &sNMGetVersion) != OS_DYNLOAD_OK) {
+        if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMGetVersion", (void **) &sNMGetVersion) != OS_DYNLOAD_OK) {
             DEBUG_FUNCTION_LINE_WARN("FindExport NMGetVersion failed.");
             return NOTIFICATION_MODULE_RESULT_MODULE_MISSING_EXPORT;
         }
