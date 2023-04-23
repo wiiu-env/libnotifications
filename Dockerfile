@@ -1,4 +1,4 @@
-FROM ghcr.io/wiiu-env/devkitppc:20230326
+FROM ghcr.io/wiiu-env/devkitppc:20230420
 
 WORKDIR tmp_build
 COPY . .
