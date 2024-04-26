@@ -16,14 +16,15 @@ static NotificationModuleStatus (*sNMAddStaticNotification)(const char *,
                                                             float,
                                                             NMColor,
                                                             NMColor,
-                                                            void (*)(void *context),
+                                                            void (*)(NotificationModuleHandle, void *),
                                                             void *)              = nullptr;
 
 static NotificationModuleStatus (*sNMAddDynamicNotification)(const char *,
                                                              NMColor,
                                                              NMColor,
-                                                             void (*)(void *context),
-                                                             void *) = nullptr;
+                                                             void (*)(NotificationModuleHandle, void *),
+                                                             void *,
+                                                             NotificationModuleHandle *) = nullptr;
 
 static NotificationModuleStatus (*sNMUpdateDynamicNotificationText)(NotificationModuleHandle,
                                                                     const char *) = nullptr;
@@ -180,13 +181,6 @@ NotificationModuleStatus NotificationModule_IsOverlayReady(bool *outIsReady) {
     return reinterpret_cast<decltype(&NotificationModule_IsOverlayReady)>(sNMIsOverlayReady)(outIsReady);
 }
 
-NotificationModuleStatus NotificationModule_AddDynamicNotificationExDeclare(const char *text,
-                                                                            NMColor textColor,
-                                                                            NMColor backgroundColor,
-                                                                            NotificationModuleNotificationFinishedCallback callback,
-                                                                            void *callbackContext,
-                                                                            NotificationModuleHandle *outHandle);
-
 NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char *text,
                                                                      NotificationModuleHandle *outHandle,
                                                                      NMColor textColor,
@@ -204,12 +198,12 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char 
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_AddDynamicNotificationExDeclare)>(sNMAddDynamicNotification)(text,
-                                                                                                                      textColor,
-                                                                                                                      backgroundColor,
-                                                                                                                      finishFunc,
-                                                                                                                      context,
-                                                                                                                      outHandle);
+    return reinterpret_cast<decltype(sNMAddDynamicNotification)>(sNMAddDynamicNotification)(text,
+                                                                                            textColor,
+                                                                                            backgroundColor,
+                                                                                            finishFunc,
+                                                                                            context,
+                                                                                            outHandle);
 }
 
 NotificationModuleStatus NotificationModule_AddDynamicNotification(const char *text, NotificationModuleHandle *outHandle) {
@@ -254,14 +248,14 @@ static NotificationModuleStatus NotificationModule_AddStaticNotification(const c
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_AddStaticNotification)>(sNMAddStaticNotification)(text,
-                                                                                                           type,
-                                                                                                           durationBeforeFadeOutInSeconds,
-                                                                                                           shakeDurationInSeconds,
-                                                                                                           textColor,
-                                                                                                           backgroundColor,
-                                                                                                           callback,
-                                                                                                           callbackContext);
+    return reinterpret_cast<decltype(sNMAddStaticNotification)>(sNMAddStaticNotification)(text,
+                                                                                          type,
+                                                                                          durationBeforeFadeOutInSeconds,
+                                                                                          shakeDurationInSeconds,
+                                                                                          textColor,
+                                                                                          backgroundColor,
+                                                                                          callback,
+                                                                                          callbackContext);
 }
 
 #undef NotificationModule_SetDefaultValue
