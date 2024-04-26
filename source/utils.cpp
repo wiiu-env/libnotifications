@@ -105,27 +105,27 @@ NotificationModuleStatus NotificationModule_InitLibrary() {
     }
     if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMAddDynamicNotification", (void **) &sNMAddDynamicNotification) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMAddDynamicNotification failed.");
-        sNMAddStaticNotification = nullptr;
+        sNMAddDynamicNotification = nullptr;
     }
 
     if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationText", (void **) &sNMUpdateDynamicNotificationText) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationText failed.");
-        sNMAddStaticNotification = nullptr;
+        sNMUpdateDynamicNotificationText = nullptr;
     }
 
     if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationBackgroundColor", (void **) &sNMUpdateDynamicNotificationBackgroundColor) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationBackgroundColor failed.");
-        sNMAddStaticNotification = nullptr;
+        sNMUpdateDynamicNotificationBackgroundColor = nullptr;
     }
 
     if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMUpdateDynamicNotificationTextColor", (void **) &sNMUpdateDynamicNotificationTextColor) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMUpdateDynamicNotificationTextColor failed.");
-        sNMAddStaticNotification = nullptr;
+        sNMUpdateDynamicNotificationTextColor = nullptr;
     }
 
     if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMFinishDynamicNotification", (void **) &sNMFinishDynamicNotification) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE_ERR("FindExport NMFinishDynamicNotification failed.");
-        sNMAddStaticNotification = nullptr;
+        sNMFinishDynamicNotification = nullptr;
     }
 
     sDefaultValues.clear();
