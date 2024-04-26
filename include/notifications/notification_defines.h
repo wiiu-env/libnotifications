@@ -47,4 +47,5 @@ typedef enum NotificationModuleNotificationOption {
     NOTIFICATION_MODULE_DEFAULT_OPTION_DURATION_BEFORE_FADE_OUT, /* Time in seconds before the Notification will fade out: Type: float. Example: 2.5f = 2.5 seconds*/
     NOTIFICATION_MODULE_DEFAULT_OPTION_FINISH_FUNCTION,          /* Function that will be called when the Notification starts to fade out. Type: NotificationModuleNotificationFinishedCallback*/
     NOTIFICATION_MODULE_DEFAULT_OPTION_FINISH_FUNCTION_CONTEXT,  /* Context that will be passed to the NOTIFICATION_MODULE_DEFAULT_TYPE_FINISH_FUNCTION callback. Type: void* */
+    NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN,         /* Keeps the notification in memory until it was actually shown */
 } NotificationModuleNotificationOption;

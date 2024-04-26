@@ -9,4 +9,5 @@ struct NMDefaultValueStore {
     NMColor textColor                                           = {255, 255, 255, 255};
     void (*finishFunc)(NotificationModuleHandle, void *context) = nullptr;
     void *finishFuncContext                                     = nullptr;
+    bool keepUntilShown                                         = false;
 };

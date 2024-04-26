@@ -94,6 +94,7 @@ NotificationModuleStatus NotificationModule_SetDefaultValue(NotificationModuleNo
  * @param backgroundColor Background color of the Notification
  * @param callback Function that will be called then the Notification fades out.
  * @param callbackContext Context that will be passed to the callback.
+ * @param keepUntilShown The Notification will be stored in a queue until can be shown - even accross application starts
  * @return NOTIFICATION_MODULE_RESULT_SUCCESS:               The default value has been set.<br>
  *         NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT:      text was NULL.<br>
  *         NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND:   The loaded module version doesn't not support this function.<br>
@@ -106,7 +107,8 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationEx(const char *te
                                                                   NMColor textColor,
                                                                   NMColor backgroundColor,
                                                                   NotificationModuleNotificationFinishedCallback callback,
-                                                                  void *callbackContext);
+                                                                  void *callbackContext,
+                                                                  bool keepUntilShown);
 
 /**
  * Displays a Notification that fade outs after a given time. <br>
@@ -161,6 +163,7 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationWithCallback(cons
  * @param backgroundColor Background color of the Notification
  * @param callback Function that will be called then the Notification fades out.
  * @param callbackContext Context that will be passed to the callback.
+ * @param keepUntilShown The Notification will be stored in a queue until can be shown - even accross application starts
  * @return NOTIFICATION_MODULE_RESULT_SUCCESS:               The default value has been set.<br>
  *         NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT:      text was NULL.<br>
  *         NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND:   The loaded module version doesn't not support this function.<br>
@@ -174,7 +177,8 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationEx(const char *t
                                                                    NMColor textColor,
                                                                    NMColor backgroundColor,
                                                                    NotificationModuleNotificationFinishedCallback callback,
-                                                                   void *callbackContext);
+                                                                   void *callbackContext,
+                                                                   bool keepUntilShown);
 
 /**
  * Displays a (error) Notification (default background color: red) that shakes and fade outs after a given time. <br>
@@ -227,6 +231,7 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationWithCallback(con
  * @param backgroundColor Background color of the notification
  * @param callback Function that will be called then the Notification fades out.
  * @param callbackContext Context that will be passed to the callback.
+ * @param keepUntilShown The Notification will be stored in a queue until can be shown - even accross application starts
  * @return NOTIFICATION_MODULE_RESULT_SUCCESS:               The default value has been set.<br>
  *         NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT:      text or outHandle was NULL <br>
  *         NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND:   The loaded module version doesn't not support this function.<br>
@@ -239,7 +244,8 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char 
                                                                      NMColor textColor,
                                                                      NMColor backgroundColor,
                                                                      NotificationModuleNotificationFinishedCallback callback,
-                                                                     void *callbackContext);
+                                                                     void *callbackContext,
+                                                                     bool keepUntilShown);
 
 /**
  * Displays a Notification that can be updated and stays on the screen until `NotificationModule_FinishDynamicNotification*` has been called. <br>
