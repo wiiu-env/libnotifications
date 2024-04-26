@@ -26,6 +26,24 @@ static NotificationModuleStatus (*sNMAddDynamicNotification)(const char *,
                                                              void *,
                                                              NotificationModuleHandle *) = nullptr;
 
+static NotificationModuleStatus (*sNMAddStaticNotificationV2)(const char *,
+                                                              NotificationModuleNotificationType,
+                                                              float,
+                                                              float,
+                                                              NMColor,
+                                                              NMColor,
+                                                              void (*)(NotificationModuleHandle, void *),
+                                                              void *,
+                                                              bool) = nullptr;
+
+static NotificationModuleStatus (*sNMAddDynamicNotificationV2)(const char *,
+                                                               NMColor,
+                                                               NMColor,
+                                                               void (*)(NotificationModuleHandle, void *),
+                                                               void *,
+                                                               bool,
+                                                               NotificationModuleHandle *) = nullptr;
+
 static NotificationModuleStatus (*sNMUpdateDynamicNotificationText)(NotificationModuleHandle,
                                                                     const char *) = nullptr;
 
@@ -128,6 +146,15 @@ NotificationModuleStatus NotificationModule_InitLibrary() {
         sNMFinishDynamicNotification = nullptr;
     }
 
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMAddDynamicNotificationV2", (void **) &sNMAddDynamicNotificationV2) != OS_DYNLOAD_OK) {
+        DEBUG_FUNCTION_LINE_ERR("FindExport NMAddDynamicNotificationV2 failed.");
+        sNMAddDynamicNotificationV2 = nullptr;
+    }
+    if (OSDynLoad_FindExport(sModuleHandle, OS_DYNLOAD_EXPORT_FUNC, "NMAddStaticNotificationV2", (void **) &sNMAddStaticNotificationV2) != OS_DYNLOAD_OK) {
+        DEBUG_FUNCTION_LINE_ERR("FindExport NMAddStaticNotificationV2 failed.");
+        sNMAddStaticNotificationV2 = nullptr;
+    }
+
     sDefaultValues.clear();
 
     sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO];
@@ -186,7 +213,8 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char 
                                                                      NMColor textColor,
                                                                      NMColor backgroundColor,
                                                                      void (*finishFunc)(NotificationModuleHandle, void *context),
-                                                                     void *context) {
+                                                                     void *context,
+                                                                     bool keepUntilShown) {
     if (sNotificationModuleVersion == NOTIFICATION_MODULE_API_VERSION_ERROR) {
         return NOTIFICATION_MODULE_RESULT_LIB_UNINITIALIZED;
     }
@@ -196,6 +224,19 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char 
 
     if (text == nullptr || outHandle == nullptr) {
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
+    }
+
+    if (sNotificationModuleVersion == 2) {
+        if (sNMAddDynamicNotificationV2 == nullptr) {
+            return NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND;
+        }
+        return reinterpret_cast<decltype(sNMAddDynamicNotificationV2)>(sNMAddDynamicNotificationV2)(text,
+                                                                                                    textColor,
+                                                                                                    backgroundColor,
+                                                                                                    finishFunc,
+                                                                                                    context,
+                                                                                                    keepUntilShown,
+                                                                                                    outHandle);
     }
 
     return reinterpret_cast<decltype(sNMAddDynamicNotification)>(sNMAddDynamicNotification)(text,
@@ -213,7 +254,8 @@ NotificationModuleStatus NotificationModule_AddDynamicNotification(const char *t
                                                        cur.textColor,
                                                        cur.backgroundColor,
                                                        cur.finishFunc,
-                                                       cur.finishFuncContext);
+                                                       cur.finishFuncContext,
+                                                       cur.keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_AddDynamicNotificationWithCallback(const char *text,
@@ -226,7 +268,8 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationWithCallback(c
                                                        cur.textColor,
                                                        cur.backgroundColor,
                                                        callback,
-                                                       callbackContext);
+                                                       callbackContext,
+                                                       cur.keepUntilShown);
 }
 
 static NotificationModuleStatus NotificationModule_AddStaticNotification(const char *text,
@@ -236,7 +279,8 @@ static NotificationModuleStatus NotificationModule_AddStaticNotification(const c
                                                                          NMColor textColor,
                                                                          NMColor backgroundColor,
                                                                          NotificationModuleNotificationFinishedCallback callback,
-                                                                         void *callbackContext) {
+                                                                         void *callbackContext,
+                                                                         bool keepUntilShown) {
     if (sNotificationModuleVersion == NOTIFICATION_MODULE_API_VERSION_ERROR) {
         return NOTIFICATION_MODULE_RESULT_LIB_UNINITIALIZED;
     }
@@ -248,6 +292,20 @@ static NotificationModuleStatus NotificationModule_AddStaticNotification(const c
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
+    if (sNotificationModuleVersion == 2) {
+        if (sNMAddStaticNotificationV2 == nullptr) {
+            return NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND;
+        }
+        return reinterpret_cast<decltype(sNMAddStaticNotificationV2)>(sNMAddStaticNotificationV2)(text,
+                                                                                                  type,
+                                                                                                  durationBeforeFadeOutInSeconds,
+                                                                                                  shakeDurationInSeconds,
+                                                                                                  textColor,
+                                                                                                  backgroundColor,
+                                                                                                  callback,
+                                                                                                  callbackContext,
+                                                                                                  keepUntilShown);
+    }
     return reinterpret_cast<decltype(sNMAddStaticNotification)>(sNMAddStaticNotification)(text,
                                                                                           type,
                                                                                           durationBeforeFadeOutInSeconds,
@@ -300,6 +358,11 @@ NotificationModuleStatus NotificationModule_SetDefaultValue(NotificationModuleNo
             cur.finishFuncContext = arg;
             break;
         }
+        case NOTIFICATION_MODULE_DEFAULT_OPTION_KEEP_UNTIL_SHOWN: {
+            auto arg           = va_arg(va, int);
+            cur.keepUntilShown = (bool) arg;
+            break;
+        }
         default:
             res = NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
             break;
@@ -315,7 +378,8 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationEx(const char *te
                                                                   NMColor textColor,
                                                                   NMColor backgroundColor,
                                                                   NotificationModuleNotificationFinishedCallback callback,
-                                                                  void *callbackContext) {
+                                                                  void *callbackContext,
+                                                                  bool keepUntilShown) {
     return NotificationModule_AddStaticNotification(text,
                                                     NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO,
                                                     durationBeforeFadeOutInSeconds,
@@ -323,7 +387,8 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationEx(const char *te
                                                     textColor,
                                                     backgroundColor,
                                                     callback,
-                                                    callbackContext);
+                                                    callbackContext,
+                                                    keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_AddInfoNotification(const char *text) {
@@ -333,7 +398,8 @@ NotificationModuleStatus NotificationModule_AddInfoNotification(const char *text
                                                     cur.textColor,
                                                     cur.backgroundColor,
                                                     cur.finishFunc,
-                                                    cur.finishFuncContext);
+                                                    cur.finishFuncContext,
+                                                    cur.keepUntilShown);
 }
 NotificationModuleStatus NotificationModule_AddInfoNotificationWithCallback(const char *text,
                                                                             NotificationModuleNotificationFinishedCallback callback,
@@ -344,7 +410,8 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationWithCallback(cons
                                                     cur.textColor,
                                                     cur.backgroundColor,
                                                     callback,
-                                                    callbackContext);
+                                                    callbackContext,
+                                                    cur.keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_AddErrorNotificationEx(const char *text,
@@ -353,7 +420,8 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationEx(const char *t
                                                                    NMColor textColor,
                                                                    NMColor backgroundColor,
                                                                    NotificationModuleNotificationFinishedCallback callback,
-                                                                   void *callbackContext) {
+                                                                   void *callbackContext,
+                                                                   bool keepUntilShown) {
     return NotificationModule_AddStaticNotification(text,
                                                     NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR,
                                                     durationBeforeFadeOutInSeconds,
@@ -361,7 +429,8 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationEx(const char *t
                                                     textColor,
                                                     backgroundColor,
                                                     callback,
-                                                    callbackContext);
+                                                    callbackContext,
+                                                    keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_AddErrorNotification(const char *text) {
@@ -376,7 +445,8 @@ NotificationModuleStatus NotificationModule_AddErrorNotification(const char *tex
                                                      cur.textColor,
                                                      cur.backgroundColor,
                                                      cur.finishFunc,
-                                                     cur.finishFuncContext);
+                                                     cur.finishFuncContext,
+                                                     cur.keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_AddErrorNotificationWithCallback(const char *text,
@@ -393,7 +463,8 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationWithCallback(con
                                                      cur.textColor,
                                                      cur.backgroundColor,
                                                      callback,
-                                                     callbackContext);
+                                                     callbackContext,
+                                                     cur.keepUntilShown);
 }
 
 NotificationModuleStatus NotificationModule_UpdateDynamicNotificationText(NotificationModuleHandle handle,
