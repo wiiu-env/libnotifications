@@ -12,7 +12,7 @@ WUMS_ROOT := $(DEVKITPRO)/wums
 ```
 and add `-lnotifications` to `LIBS` and `$(WUMS_ROOT)` to `LIBDIRS`.
 
-After that you can simply include `<notifications/notifications.h>` to get access to the function patcher functions after calling `NotificationModule_InitLibrary()`.
+Include `<notifications/notifications.h>` to get access to the NotificationModule functions, after calling `NotificationModule_InitLibrary()`.
 
 ## Use this lib in Dockerfiles.
 A prebuilt version of this lib can found on dockerhub. To use it for your projects, add this to your Dockerfile.
