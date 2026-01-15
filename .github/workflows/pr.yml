@@ -20,6 +20,8 @@ jobs:
         docker build . -t tmp
         docker build . -f Dockerfile.buildlocal -t builder        
         docker run --rm -v ${PWD}:/project builder make
+        docker run --rm -v ${PWD}:/project builder /bin/bash -c "make install && chmod +x tests/parameter_checker/runner.sh && cd tests/parameter_checker && ./runner.sh"
+        docker run --rm -v ${PWD}:/project builder /bin/bash -c "make install && chmod +x tests/parameter_checker/negative_runner.sh && cd tests/parameter_checker && ./negative_runner.sh"
     - uses: actions/upload-artifact@master
       with:
        name: lib
