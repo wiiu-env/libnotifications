@@ -1,9 +1,10 @@
 #include "internal.h"
 #include "logger.h"
+
+#include <stdarg.h>
+
 #include <coreinit/debug.h>
 #include <coreinit/dynload.h>
-#include <cstdarg>
-#include <map>
 #include <notifications/notifications.h>
 
 static OSDynLoad_Module sModuleHandle = nullptr;
@@ -59,7 +60,14 @@ static NotificationModuleStatus (*sNMFinishDynamicNotification)(NotificationModu
                                                                 float shakeDurationInSeconds) = nullptr;
 
 static bool sLibInitDone = false;
-std::map<NotificationModuleNotificationType, NMDefaultValueStore> sDefaultValues;
+
+#define MAX_NOTIFICATION_TYPES 3
+
+static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO < MAX_NOTIFICATION_TYPES);
+static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR < MAX_NOTIFICATION_TYPES);
+static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC < MAX_NOTIFICATION_TYPES);
+
+static NMDefaultValueStore sDefaultValues[MAX_NOTIFICATION_TYPES];
 
 static NotificationModuleAPIVersion sNotificationModuleVersion = NOTIFICATION_MODULE_API_VERSION_ERROR;
 
@@ -155,11 +163,14 @@ NotificationModuleStatus NotificationModule_InitLibrary() {
         sNMAddStaticNotificationV2 = nullptr;
     }
 
-    sDefaultValues.clear();
+    for (auto &sDefaultValue : sDefaultValues) {
+        sDefaultValue = NMDefaultValueStore(); // Reset to defaults
+    }
 
-    sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO];
-    sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR].backgroundColor = {237, 28, 36, 255};
-    sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC];
+    // Set specific default for Error
+    if constexpr (NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR < MAX_NOTIFICATION_TYPES) {
+        sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR].backgroundColor = {237, 28, 36, 255};
+    }
 
     sLibInitDone = true;
     return NOTIFICATION_MODULE_RESULT_SUCCESS;
@@ -171,8 +182,7 @@ NotificationModuleStatus NotificationModule_DeInitLibrary() {
         sNotificationModuleVersion = NOTIFICATION_MODULE_API_VERSION_ERROR;
         OSDynLoad_Release(sModuleHandle);
         sModuleHandle = nullptr;
-        sDefaultValues.clear();
-        sLibInitDone = false;
+        sLibInitDone  = false;
     }
     return NOTIFICATION_MODULE_RESULT_SUCCESS;
 }
@@ -190,7 +200,7 @@ NotificationModuleStatus NotificationModule_GetVersion(NotificationModuleAPIVers
         }
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_GetVersion)>(sNMGetVersion)(outVersion);
+    return sNMGetVersion(outVersion);
 }
 
 NotificationModuleStatus NotificationModule_IsOverlayReady(bool *outIsReady) {
@@ -205,7 +215,7 @@ NotificationModuleStatus NotificationModule_IsOverlayReady(bool *outIsReady) {
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_IsOverlayReady)>(sNMIsOverlayReady)(outIsReady);
+    return sNMIsOverlayReady(outIsReady);
 }
 
 NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char *text,
@@ -230,24 +240,25 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationEx(const char 
         if (sNMAddDynamicNotificationV2 == nullptr) {
             return NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND;
         }
-        return reinterpret_cast<decltype(sNMAddDynamicNotificationV2)>(sNMAddDynamicNotificationV2)(text,
-                                                                                                    textColor,
-                                                                                                    backgroundColor,
-                                                                                                    finishFunc,
-                                                                                                    context,
-                                                                                                    keepUntilShown,
-                                                                                                    outHandle);
+        return sNMAddDynamicNotificationV2(text,
+                                           textColor,
+                                           backgroundColor,
+                                           finishFunc,
+                                           context,
+                                           keepUntilShown,
+                                           outHandle);
     }
 
-    return reinterpret_cast<decltype(sNMAddDynamicNotification)>(sNMAddDynamicNotification)(text,
-                                                                                            textColor,
-                                                                                            backgroundColor,
-                                                                                            finishFunc,
-                                                                                            context,
-                                                                                            outHandle);
+    return sNMAddDynamicNotification(text,
+                                     textColor,
+                                     backgroundColor,
+                                     finishFunc,
+                                     context,
+                                     outHandle);
 }
 
 NotificationModuleStatus NotificationModule_AddDynamicNotification(const char *text, NotificationModuleHandle *outHandle) {
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC];
     return NotificationModule_AddDynamicNotificationEx(text,
                                                        outHandle,
@@ -262,6 +273,7 @@ NotificationModuleStatus NotificationModule_AddDynamicNotificationWithCallback(c
                                                                                NotificationModuleHandle *outHandle,
                                                                                NotificationModuleNotificationFinishedCallback callback,
                                                                                void *callbackContext) {
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_DYNAMIC];
     return NotificationModule_AddDynamicNotificationEx(text,
                                                        outHandle,
@@ -296,24 +308,24 @@ static NotificationModuleStatus NotificationModule_AddStaticNotification(const c
         if (sNMAddStaticNotificationV2 == nullptr) {
             return NOTIFICATION_MODULE_RESULT_UNSUPPORTED_COMMAND;
         }
-        return reinterpret_cast<decltype(sNMAddStaticNotificationV2)>(sNMAddStaticNotificationV2)(text,
-                                                                                                  type,
-                                                                                                  durationBeforeFadeOutInSeconds,
-                                                                                                  shakeDurationInSeconds,
-                                                                                                  textColor,
-                                                                                                  backgroundColor,
-                                                                                                  callback,
-                                                                                                  callbackContext,
-                                                                                                  keepUntilShown);
+        return sNMAddStaticNotificationV2(text,
+                                          type,
+                                          durationBeforeFadeOutInSeconds,
+                                          shakeDurationInSeconds,
+                                          textColor,
+                                          backgroundColor,
+                                          callback,
+                                          callbackContext,
+                                          keepUntilShown);
     }
-    return reinterpret_cast<decltype(sNMAddStaticNotification)>(sNMAddStaticNotification)(text,
-                                                                                          type,
-                                                                                          durationBeforeFadeOutInSeconds,
-                                                                                          shakeDurationInSeconds,
-                                                                                          textColor,
-                                                                                          backgroundColor,
-                                                                                          callback,
-                                                                                          callbackContext);
+    return sNMAddStaticNotification(text,
+                                    type,
+                                    durationBeforeFadeOutInSeconds,
+                                    shakeDurationInSeconds,
+                                    textColor,
+                                    backgroundColor,
+                                    callback,
+                                    callbackContext);
 }
 
 #undef NotificationModule_SetDefaultValue
@@ -323,11 +335,12 @@ NotificationModuleStatus NotificationModule_SetDefaultValue(NotificationModuleNo
     if (sModuleHandle == nullptr) {
         return NOTIFICATION_MODULE_RESULT_LIB_UNINITIALIZED;
     }
-    va_list va;
 
-    if (!sDefaultValues.contains(type) && type == NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR) {
-        sDefaultValues[type].backgroundColor = {237, 28, 36, 255};
+    if (type < 0 || type >= MAX_NOTIFICATION_TYPES) {
+        return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
+
+    va_list va;
 
     auto &cur = sDefaultValues[type];
     va_start(va, valueType);
@@ -392,6 +405,7 @@ NotificationModuleStatus NotificationModule_AddInfoNotificationEx(const char *te
 }
 
 NotificationModuleStatus NotificationModule_AddInfoNotification(const char *text) {
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO];
     return NotificationModule_AddInfoNotificationEx(text,
                                                     cur.durationBeforeFadeOutInSeconds,
@@ -404,6 +418,7 @@ NotificationModuleStatus NotificationModule_AddInfoNotification(const char *text
 NotificationModuleStatus NotificationModule_AddInfoNotificationWithCallback(const char *text,
                                                                             NotificationModuleNotificationFinishedCallback callback,
                                                                             void *callbackContext) {
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_INFO];
     return NotificationModule_AddInfoNotificationEx(text,
                                                     cur.durationBeforeFadeOutInSeconds,
@@ -438,6 +453,7 @@ NotificationModuleStatus NotificationModule_AddErrorNotification(const char *tex
         return NOTIFICATION_MODULE_RESULT_LIB_UNINITIALIZED;
     }
 
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR];
     return NotificationModule_AddErrorNotificationEx(text,
                                                      cur.durationBeforeFadeOutInSeconds,
@@ -456,6 +472,7 @@ NotificationModuleStatus NotificationModule_AddErrorNotificationWithCallback(con
         return NOTIFICATION_MODULE_RESULT_LIB_UNINITIALIZED;
     }
 
+    static_assert(NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR < MAX_NOTIFICATION_TYPES);
     auto &cur = sDefaultValues[NOTIFICATION_MODULE_NOTIFICATION_TYPE_ERROR];
     return NotificationModule_AddErrorNotificationEx(text,
                                                      cur.durationBeforeFadeOutInSeconds,
@@ -480,8 +497,8 @@ NotificationModuleStatus NotificationModule_UpdateDynamicNotificationText(Notifi
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_UpdateDynamicNotificationText)>(sNMUpdateDynamicNotificationText)(handle,
-                                                                                                                           text);
+    return sNMUpdateDynamicNotificationText(handle,
+                                            text);
 }
 
 NotificationModuleStatus NotificationModule_UpdateDynamicNotificationBackgroundColor(NotificationModuleHandle handle,
@@ -497,8 +514,8 @@ NotificationModuleStatus NotificationModule_UpdateDynamicNotificationBackgroundC
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_UpdateDynamicNotificationBackgroundColor)>(sNMUpdateDynamicNotificationBackgroundColor)(handle,
-                                                                                                                                                 backgroundColor);
+    return sNMUpdateDynamicNotificationBackgroundColor(handle,
+                                                       backgroundColor);
 }
 
 NotificationModuleStatus NotificationModule_UpdateDynamicNotificationTextColor(NotificationModuleHandle handle,
@@ -514,8 +531,8 @@ NotificationModuleStatus NotificationModule_UpdateDynamicNotificationTextColor(N
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_UpdateDynamicNotificationBackgroundColor)>(sNMUpdateDynamicNotificationTextColor)(handle,
-                                                                                                                                           textColor);
+    return sNMUpdateDynamicNotificationTextColor(handle,
+                                                 textColor);
 }
 
 static NotificationModuleStatus NotificationModule_FinishDynamicNotificationEx(NotificationModuleHandle handle,
@@ -533,10 +550,10 @@ static NotificationModuleStatus NotificationModule_FinishDynamicNotificationEx(N
         return NOTIFICATION_MODULE_RESULT_INVALID_ARGUMENT;
     }
 
-    return reinterpret_cast<decltype(&NotificationModule_FinishDynamicNotificationEx)>(sNMFinishDynamicNotification)(handle,
-                                                                                                                     finishMode,
-                                                                                                                     durationBeforeFadeOutInSeconds,
-                                                                                                                     shakeDurationInSeconds);
+    return sNMFinishDynamicNotification(handle,
+                                        finishMode,
+                                        durationBeforeFadeOutInSeconds,
+                                        shakeDurationInSeconds);
 }
 
 NotificationModuleStatus NotificationModule_FinishDynamicNotification(NotificationModuleHandle handle,
