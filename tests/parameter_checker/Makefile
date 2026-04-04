@@ -47,7 +47,7 @@ DRC_SPLASH	:=
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections \
+CFLAGS	:=	-g -Wall -Werror -ffunction-sections \
 			$(MACHDEP) $(USER_CFLAGS)
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__
