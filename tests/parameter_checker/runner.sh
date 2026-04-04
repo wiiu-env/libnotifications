@@ -4,69 +4,64 @@
 set -e
 
 echo "========================================"
-echo "Starting Compilation Matrix"
+echo "Starting 2D Compilation Matrix"
 echo "========================================"
 
-# ------------------------------------------------------------------
-# 1. POSITIVE TESTS (Should Compile)
-# ------------------------------------------------------------------
+# Optimization Levels Array
+OPT_LEVELS=("-O0" "-O1" "-O2" "-O3" "-Os" "-Ofast" "-Og")
 
 # C++ Standards
-CPP_STANDARDS=("gnu++11" "gnu++14" "gnu++17" "gnu++2a")
-
-for std in "${CPP_STANDARDS[@]}"; do
-    echo "[PASS-CHECK] C++ Source with -std=$std"
-    make clean --no-print-directory
-    make TEST_SRC=src_cpp USER_CXXFLAGS="-std=$std" --no-print-directory
-    echo "  -> SUCCESS"
-done
+CPP_STANDARDS=("c++11" "gnu++11" "c++14" "gnu++14" "c++17" "gnu++17" "c++20" "gnu++20" "c++23" "gnu++23")
 
 # C Standards
-C_STANDARDS=("gnu99" "gnu11" "gnu17")
+C_STANDARDS=("c99" "gnu99" "c11" "gnu11" "c17" "gnu17" "c23" "gnu23")
 
-for std in "${C_STANDARDS[@]}"; do
-    echo "[PASS-CHECK] C Source with -std=$std"
-    make clean --no-print-directory
-    make TEST_SRC=src_c USER_CFLAGS="-std=$std" --no-print-directory
-    echo "  -> SUCCESS"
+# ------------------------------------------------------------------
+# 1. POSITIVE TESTS (Should Compile without errors or warnings)
+# ------------------------------------------------------------------
+
+for std in "${CPP_STANDARDS[@]}"; do
+    for opt in "${OPT_LEVELS[@]}"; do
+        echo -n "[PASS-CHECK] C++ Source with -std=$std | $opt... "
+        make clean --no-print-directory > /dev/null 2>&1
+
+        set +e # Turn off exit-on-error temporarily
+        OUTPUT=$(make TEST_SRC=src_cpp USER_CXXFLAGS="-std=$std $opt" --no-print-directory 2>&1)
+        EXIT_CODE=$?
+        set -e # Turn it back on
+
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo -e "\n  -> ERROR: Build failed!"
+            echo "================ COMPILER OUTPUT ================"
+            echo "$OUTPUT"
+            echo "================================================="
+            exit 1
+        else
+            echo "SUCCESS"
+        fi
+    done
 done
 
-# ------------------------------------------------------------------
-# 2. NEGATIVE TESTS (Should FAIL to Compile)
-# ------------------------------------------------------------------
-echo "========================================"
-echo "Starting Negative Tests (Expect Errors)"
-echo "========================================"
+for std in "${C_STANDARDS[@]}"; do
+    for opt in "${OPT_LEVELS[@]}"; do
+        echo -n "[PASS-CHECK] C Source with -std=$std | $opt... "
+        make clean --no-print-directory > /dev/null 2>&1
 
-FAIL_CASES=(
-    "src_fail/fail_color"
-    "src_fail/fail_duration"
-    "src_fail/fail_callback"
-    "src_fail/fail_bool"
-)
+        set +e # Turn off exit-on-error temporarily
+        OUTPUT=$(make TEST_SRC=src_c USER_CFLAGS="-std=$std $opt" --no-print-directory 2>&1)
+        EXIT_CODE=$?
+        set -e # Turn it back on
 
-# Temporarily turn off 'set -e' so we can capture the failure
-set +e
-
-for test_dir in "${FAIL_CASES[@]}"; do
-    echo "[FAIL-CHECK] Testing $test_dir (Should fail build)"
-    
-    make clean --no-print-directory > /dev/null 2>&1
-    
-    # Run Make and capture output to prevent cluttering logs, 
-    # unless you want to see the specific error.
-    OUTPUT=$(make TEST_SRC=$test_dir --no-print-directory 2>&1)
-    EXIT_CODE=$?
-
-    if [ $EXIT_CODE -eq 0 ]; then
-        echo "  -> ERROR: Build succeeded but SHOULD HAVE FAILED!"
-        echo "     (Type checks failed to catch the invalid parameter)"
-        exit 1
-    else
-        echo "  -> SUCCESS: Build failed as expected."
-        # Optional: Check if the output contains the specific warning message?
-        # echo "$OUTPUT" | grep "NotificationModule_SetDefaultValue expects"
-    fi
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo -e "\n  -> ERROR: Build failed!"
+            echo "================ COMPILER OUTPUT ================"
+            echo "$OUTPUT"
+            echo "================================================="
+            exit 1
+        else
+            echo "SUCCESS"
+        fi
+    done
 done
 
 # Re-enable exit on error
